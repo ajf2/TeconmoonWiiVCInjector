@@ -761,7 +761,7 @@
       // 
       this.PackedTitleLine2.BackColor = System.Drawing.Color.Silver;
       this.PackedTitleLine2.Location = new System.Drawing.Point(6, 50);
-      this.PackedTitleLine2.MaxLength = 32;
+      this.PackedTitleLine2.MaxLength = 64;
       this.PackedTitleLine2.Name = "PackedTitleLine2";
       this.PackedTitleLine2.ReadOnly = true;
       this.PackedTitleLine2.Size = new System.Drawing.Size(265, 20);
@@ -771,7 +771,7 @@
       // PackedTitleLine1
       // 
       this.PackedTitleLine1.Location = new System.Drawing.Point(6, 23);
-      this.PackedTitleLine1.MaxLength = 32;
+      this.PackedTitleLine1.MaxLength = 64;
       this.PackedTitleLine1.Name = "PackedTitleLine1";
       this.PackedTitleLine1.Size = new System.Drawing.Size(265, 20);
       this.PackedTitleLine1.TabIndex = 1;
