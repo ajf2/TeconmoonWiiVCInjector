@@ -17,6 +17,7 @@ using System.Diagnostics;
 using Microsoft.VisualBasic.FileIO;
 using System.Runtime.InteropServices;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using TeconMoon_s_WiiVC_Injector.Properties;
 
 namespace TeconMoon_s_WiiVC_Injector
 {
@@ -666,11 +667,14 @@ namespace TeconMoon_s_WiiVC_Injector
         //Events for the "Required Source Files" Tab
         private void GameSourceButton_Click(object sender, EventArgs e)
         {
+            OpenGame.InitialDirectory = Settings.Default.GameFilePath;
             if (OpenGame.ShowDialog() == DialogResult.OK)
             {
                 // delete any previous files
                 CleanUp();
 
+                Settings.Default.GameFilePath = Path.GetDirectoryName(OpenGame.FileName);
+                Settings.Default.Save();
                 GameSourceDirectory.Text = OpenGame.FileName;
                 GameSourceDirectory.ForeColor = Color.Black;
                 FlagGameSpecified = true;
