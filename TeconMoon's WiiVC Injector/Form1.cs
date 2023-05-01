@@ -71,6 +71,7 @@ namespace TeconMoon_s_WiiVC_Injector
         bool FlagWBFS;
         bool FlagNKIT;
         bool FlagNASOS;
+        bool FlagRVZ;
         bool FlagGameSpecified;
         bool FlagGC2Specified;
         bool FlagIconSpecified;
@@ -261,7 +262,7 @@ namespace TeconMoon_s_WiiVC_Injector
                 GameSourceButton.Enabled = true;
                 GameSourceButton.Text = "Game...";
                 OpenGame.FileName = "game";
-                OpenGame.Filter = "Wii Dumps (*.iso,*.wbfs,*.iso.dec)|*.iso;*.wbfs;*.iso.dec";
+                OpenGame.Filter = "Wii Dumps (*.iso,*.rvz,*.wbfs,*.iso.dec)|*.iso;*.rvz;*.wbfs;*.iso.dec";
                 GameSourceDirectory.Text = "Game file has not been specified";
                 GameSourceDirectory.ForeColor = Color.Red;
                 FlagGameSpecified = false;
@@ -455,7 +456,7 @@ namespace TeconMoon_s_WiiVC_Injector
                 GameSourceButton.Enabled = true;
                 GameSourceButton.Text = "Game...";
                 OpenGame.FileName = "game";
-                OpenGame.Filter = "GameCube Dumps (*.gcm,*.iso)|*.gcm;*.iso";
+                OpenGame.Filter = "GameCube Dumps (*.gcm,*.iso,*.rvz)|*.gcm;*.iso;*.rvz";
                 GameSourceDirectory.Text = "Game file has not been specified";
                 GameSourceDirectory.ForeColor = Color.Red;
                 FlagGameSpecified = false;
@@ -685,7 +686,8 @@ namespace TeconMoon_s_WiiVC_Injector
                         Array.Reverse(idBytes);
                     }
                     string idString = new string(Encoding.ASCII.GetChars(idBytes));
-                    
+                    string id3String = idString.Substring(0, 3);
+
                     //WBFS Check
                     if (idString == "WBFS") //Performs actions if the header indicates a WBFS file
                     {
@@ -710,6 +712,23 @@ namespace TeconMoon_s_WiiVC_Injector
                             reader.BaseStream.Position = 0x2A0;
                             TitleIDInt = reader.ReadInt32();
                             InternalGameName = "N/A";
+                        }
+                        if (id3String == "RVZ") //Performs actions if the header indicates an RVZ file
+                        {
+                            FlagRVZ = true;
+                            uint startOffset = 0;
+                            reader.BaseStream.Position = startOffset + 0x58;
+                            TitleIDInt = reader.ReadInt32();
+                            reader.BaseStream.Position = startOffset + 0x70;
+                            GameType = reader.ReadInt64();
+                            TempString = "";
+                            reader.BaseStream.Position = 0x78;
+                            while ((int)(TempChar = reader.ReadChar()) != 0) TempString = TempString + TempChar;
+                            InternalGameName = TempString;
+                            TempString = "";
+                            reader.BaseStream.Position = 0x58;
+                            while ((int)(TempChar = reader.ReadChar()) != 0) TempString = TempString + TempChar;
+                            CucholixRepoID = TempString;
                         }
                         else //Performs actions if the header indicates a normal Wii / GC iso
                         {
@@ -1044,7 +1063,17 @@ namespace TeconMoon_s_WiiVC_Injector
             {
                 using (var reader = new BinaryReader(File.OpenRead(OpenGC2.FileName)))
                 {
-                    reader.BaseStream.Position = 0x18;
+                    reader.BaseStream.Position = 0;
+                    var firstThreeBytes = reader.ReadBytes(3);
+                    var id3String = new string(Encoding.ASCII.GetChars(firstThreeBytes));
+                    if (id3String == "RVZ")
+                    {
+                        reader.BaseStream.Position = 0x70;
+                    }
+                    else
+                    {
+                        reader.BaseStream.Position = 0x18;
+                    }
                     long GC2GameType = reader.ReadInt64();
                     if (GC2GameType != 4440324665927270400)
                     {
@@ -1976,6 +2005,12 @@ namespace TeconMoon_s_WiiVC_Injector
                     LaunchProgram();
                     OpenGame.FileName = TempSourcePath + "wbfsconvert.iso";
                 }
+                if (FlagRVZ) {
+                  LauncherExeFile = TempToolsPath + "EXE\\DolphinTool.exe";
+                  LauncherExeArgs = "convert -i " + "\"" + OpenGame.FileName + "\" -f iso -o \"" + TempSourcePath + "rvzconvert.iso\"";
+                  LaunchProgram();
+                  OpenGame.FileName = TempSourcePath + "rvzconvert.iso";
+                }
                 if (FlagNKIT || FlagNASOS)
                 {
                     if (Directory.Exists(TempToolsPath + "NKIT\\Processed"))
@@ -2095,6 +2130,13 @@ namespace TeconMoon_s_WiiVC_Injector
                     File.Copy(TempToolsPath + "DOL\\FIX94_nintendont_default_autoboot.dol", TempSourcePath + "TEMPISOBASE\\sys\\main.dol");
                 }
 
+                if (FlagRVZ) {
+                  LauncherExeFile = TempToolsPath + "EXE\\DolphinTool.exe";
+                  LauncherExeArgs = "convert -i " + "\"" + OpenGame.FileName + "\" -f iso -o \"" + TempSourcePath + "rvzconvert.iso\"";
+                  LaunchProgram();
+                  OpenGame.FileName = TempSourcePath + "rvzconvert.iso";
+                }
+
                 if (FlagNKIT)
                 {
                     if (Directory.Exists(TempToolsPath + "NKIT\\Processed\\Temp"))
@@ -2128,7 +2170,11 @@ namespace TeconMoon_s_WiiVC_Injector
                         LaunchProgram(); // CONVERT DISC 2 TO ISO
                         File.Move(Directory.GetFiles(TempToolsPath + "NKIT\\Processed\\GameCube_MatchFail", "*.iso")[0], TempSourcePath + "TEMPISOBASE\\files\\disc2.iso");
                     }
-                    else
+                    if (FlagRVZ) {
+                      LauncherExeFile = TempToolsPath + "EXE\\DolphinTool.exe";
+                      LauncherExeArgs = "convert -i " + "\"" + OpenGC2.FileName + "\" -f iso -o \"" + TempSourcePath + "TEMPISOBASE\\files\\disc2.iso\"";
+                      LaunchProgram(); // CONVERT DISC 2 TO ISO
+                    } else
                     {
                         File.Copy(OpenGC2.FileName, TempSourcePath + "TEMPISOBASE\\files\\disc2.iso");
                     }
